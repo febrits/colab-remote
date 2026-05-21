@@ -9,7 +9,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger("colab-remote")
 
 PORT = int(os.environ.get("COLAB_REMOTE_PORT", 9876))
-TOKEN = os.environ.get("COLAB_REMOTE_TOKEN", "change-me")
+# Placeholder replaced by setup.sh sed
+TOKEN = os.environ.get("COLAB_REMOTE_TOKEN", "CHANGE_ME_SERVER_TOKEN")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -23,7 +24,7 @@ class Handler(BaseHTTPRequestHandler):
         if p.path == "/exec":
             token = q.get("token", [None])[0]
             if token != TOKEN:
-                return self.send_json(403, {"error": "unauthorized"})
+                *** self.send_json(403, {"error": "unauthorized"})
             cmd = q.get("cmd", [None])[0]
             if not cmd:
                 return self.send_json(400, {"error": "missing cmd"})

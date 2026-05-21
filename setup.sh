@@ -1,5 +1,5 @@
 #!/bin/bash
-# One-liner setup: COLAB_REMOTE_TOKEN=xxx NGROK_AUTH_TOKEN=xxx ./setup.sh
+# One-liner setup: COLAB_REMOTE_TOKEN=xxx NGROK_AUTH_TOKEN=yyy ./setup.sh
 set -e
 
 BASE="https://raw.githubusercontent.com/febrits/colab-remote/main"
@@ -8,30 +8,34 @@ echo "[*] Downloading server.py..."
 curl -sSL "$BASE/server.py" -o server.py
 
 PORT="${COLAB_REMOTE_PORT:-9876}"
-TOKEN=***
+TOKEN="${COLAB_REMOTE_TOKEN:-changeme}"
+
+# Patch server.py to use the actual token
+sed -i "s/CHANGE_ME_SERVER_TOKEN/$TOKEN/" server.py
 
 echo "[*] Starting server on port $PORT..."
 nohup python3 server.py > /tmp/colab-remote.log 2>&1 &
 echo "[*] Server PID: $!"
 sleep 2
 
-if [ -n "***" ]; then
+echo "[*] Server ready. Token: ${TOKEN:0:3}***"
+
+if [ -n "${NGROK_AUTH_TOKEN:-}" ]; then
     echo "[*] Starting ngrok..."
     pip install -q pyngrok 2>/dev/null
 
-    python3 << PYEOF
+    NGROK_AUTH_TOKEN="$NGROK_AUTH_TOKEN" COLAB_REMOTE_PORT="$PORT" python3 << 'PYEOF'
 import os, time
 from pyngrok import ngrok
 
 ngrok.set_auth_token(os.environ["NGROK_AUTH_TOKEN"])
 port = int(os.environ.get("COLAB_REMOTE_PORT", 9876))
-token = os.environ.get("COLAB_REMOTE_TOKEN", "changeme")
 
 t = ngrok.connect(port, "http", bind_tls=True)
 time.sleep(2)
 
 print(f"[OK] Tunnel URL: {t.public_url}")
-print(f"[OK] Test: curl -s \"{t.public_url}/exec?token={token}&cmd=whoami\"")
+print(f"[OK] Test: curl -s \"{t.public_url}/exec?token=YOUR_TOKEN&cmd=whoami\"")
 print(f"[OK] Save this URL — you need it to send commands from outside")
 
 # Keep alive
